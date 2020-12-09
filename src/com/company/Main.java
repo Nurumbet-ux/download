@@ -3,75 +3,31 @@ package com.company;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 
-class Downloader extends Thread{
-      private int file=500;
-      Semaphore semaphore;
-      CountDownLatch cdl ;
-    public Downloader(String name, Semaphore semaphore,CountDownLatch cdl) {
-        super(name);
-        this.semaphore = semaphore;
-        this.cdl = cdl;
-    }
-
-    @Override
-    public void run() {
-        try {
-
-            semaphore.acquire();
-            cdl.countDown();
-            file = file+500;
-            System.out.println(this.getName()+"is downloading!");
-            for (int i = 0; i <=4; i++) {
-                file = file-100;
-                sleep(1000);
-
-            }
-            semaphore.release();
-            cdl.await();
-            file=0;
-        }catch (Exception ignore){
-
-        }
-    }
-}
-class Uploader extends Thread {
-    public static int file;
-
-    @Override
-    public void run() {
-        try {
-            for (int i = 0; i < 25; i++) {
-                file = file + 20;
-                System.out.print("\uD83D\uDFE9");
-                sleep(1000);
-            }
-            System.out.println();
-
-
-        } catch (Exception ignore) {
-
-        }
-    }
-
-}
-
 
 public class Main {
 
     public static void main(String[] args) {
-        Uploader uploader = new Uploader();
+        CountDownLatch cdl = new CountDownLatch(1);
+        CountDownLatch cd = new CountDownLatch(10);
+        Semaphore s = new Semaphore(3);
+        Uploader uploader = new Uploader(cdl);
         uploader.start();
-        Semaphore semaphore = new Semaphore(3);
-        CountDownLatch cdl = new CountDownLatch(10);
         try {
-            uploader.join();
-        } catch (Exception ignore) {
+            cdl.await();
+        } catch (Exception ignore) {}
+        System.out.println("\nThe uploading is end!");
+        System.out.println("Downloaders are started downloading...");
+        for (int i = 1; i <= 10; i++) {
+            new Downloader("Passenger "+i,s,cd).start();
 
         }
-        for (int i = 0; i <10; i++) {
-            new Downloader("D"+i,semaphore,cdl).start();
-        }
+        try {
+            cd.await();
+            System.out.println("Everyone is dowloaded successfully!!!");
+            Downloader.file =0;
+            System.out.println("file is deleted from server!");
 
+        } catch (Exception ignore) {}
 
 
     }
